@@ -1,0 +1,39 @@
+{
+  "batch_mine": {
+    "factors_num": [
+      "平1",
+      "平2",
+      "平3",
+      "平4",
+      "平5",
+      "平6",
+      "特码"
+    ],
+    "factors_agg": [],
+    "lags": [
+      1
+    ],
+    "attrs": [],
+    "binary_ops": [
+      "add",
+      "sub",
+      "absdiff"
+    ],
+    "enable_ternary": false,
+    "functions": [],
+    "cross_dirs": [],
+    "cross_aggs": [],
+    "boards": [
+      "一尾"
+    ],
+    "min_win_100": 0.1,
+    "max_black": 80,
+    "min_samples": 500,
+    "min_score": 0.1,
+    "corr_threshold": 0.8,
+    "use_full_history": true,
+    "window": 500,
+    "max_output": 300,
+    "n_workers": 1
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "periods": [
+    {
+      "name": "2023兔年表",
+      "start_year": 2023,
+      "start_issue": 1,
+      "end_year": 2024,
+      "end_issue": 12,
+      "year_key": "2023",
+      "desc": "癸卯兔年。从 2023 年第 1 期开始生效（实际请以农历初一为准修改）。"
+    },
+    {
+      "name": "2024龙年表",
+      "start_year": 2024,
+      "start_issue": 13,
+      "end_year": 2025,
+      "end_issue": 12,
+      "year_key": "2024",
+      "desc": "甲辰龙年。从 2024/013 开始生效。"
+    },
+    {
+      "name": "2025蛇年表",
+      "start_year": 2025,
+      "start_issue": 13,
+      "end_year": 2026,
+      "end_issue": 12,
+      "year_key": "2025",
+      "desc": "乙巳蛇年。从 2025/013 开始生效。"
+    },
+    {
+      "name": "2026马年表",
+      "start_year": 2026,
+      "start_issue": 13,
+      "end_year": 9999,
+      "end_issue": 999,
+      "year_key": "2026",
+      "desc": "丙午马年。从 2026/013 开始生效，无截止。"
+    }
+  ]
+}

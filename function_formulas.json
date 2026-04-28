@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "functions": [
+    {
+      "name": "F_sum2",
+      "params": [
+        "a",
+        "b"
+      ],
+      "body": {
+        "op": "wrap49",
+        "args": [
+          {
+            "op": "add",
+            "args": [
+              {
+                "param": "a"
+              },
+              {
+                "param": "b"
+              }
+            ]
+          }
+        ]
+      },
+      "description": "wrap49(a + b)：两数之和归一到 1~49",
+      "builtin": true
+    },
+    {
+      "name": "F_sum3",
+      "params": [
+        "a",
+        "b",
+        "c"
+      ],
+      "body": {
+        "op": "wrap49",
+        "args": [
+          {
+            "op": "add",
+            "args": [
+              {
+                "param": "a"
+              },
+              {
+                "param": "b"
+              },
+              {
+                "param": "c"
+              }
+            ]
+          }
+        ]
+      },
+      "description": "wrap49(a + b + c)：三数之和归一",
+      "builtin": true
+    },
+    {
+      "name": "F_add_sub",
+      "params": [
+        "a",
+        "b",
+        "c"
+      ],
+      "body": {
+        "op": "wrap49",
+        "args": [
+          {
+            "op": "sub",
+            "args": [
+              {
+                "op": "add",
+                "args": [
+                  {
+                    "param": "a"
+                  },
+                  {
+                    "param": "b"
+                  }
+                ]
+              },
+              {
+                "param": "c"
+              }
+            ]
+          }
+        ]
+      },
+      "description": "wrap49(a + b - c)",
+      "builtin": true
+    },
+    {
+      "name": "F_absdiff",
+      "params": [
+        "a",
+        "b"
+      ],
+      "body": {
+        "op": "abs",
+        "args": [
+          {
+            "op": "sub",
+            "args": [
+              {
+                "param": "a"
+              },
+              {
+                "param": "b"
+              }
+            ]
+          }
+        ]
+      },
+      "description": "|a - b|：绝对差",
+      "builtin": true
+    },
+    {
+      "name": "F_max3",
+      "params": [
+        "a",
+        "b",
+        "c"
+      ],
+      "body": {
+        "op": "max",
+        "args": [
+          {
+            "param": "a"
+          },
+          {
+            "param": "b"
+          },
+          {
+            "param": "c"
+          }
+        ]
+      },
+      "description": "max(a, b, c)",
+      "builtin": true
+    },
+    {
+      "name": "F_min3",
+      "params": [
+        "a",
+        "b",
+        "c"
+      ],
+      "body": {
+        "op": "min",
+        "args": [
+          {
+            "param": "a"
+          },
+          {
+            "param": "b"
+          },
+          {
+            "param": "c"
+          }
+        ]
+      },
+      "description": "min(a, b, c)",
+      "builtin": true
+    },
+    {
+      "name": "F_if_gt",
+      "params": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "body": {
+        "op": "if_else",
+        "args": [
+          {
+            "op": "gt",
+            "args": [
+              {
+                "param": "a"
+              },
+              {
+                "param": "b"
+              }
+            ]
+          },
+          {
+            "param": "c"
+          },
+          {
+            "param": "d"
+          }
+        ]
+      },
+      "description": "若 a > b 则 c 否则 d",
+      "builtin": true
+    },
+    {
+      "name": "F_mod49_sum3",
+      "params": [
+        "a",
+        "b",
+        "c"
+      ],
+      "body": {
+        "op": "wrap49",
+        "args": [
+          {
+            "op": "mod",
+            "args": [
+              {
+                "op": "add",
+                "args": [
+                  {
+                    "param": "a"
+                  },
+                  {
+                    "param": "b"
+                  },
+                  {
+                    "param": "c"
+                  }
+                ]
+              },
+              {
+                "const": 49
+              }
+            ]
+          }
+        ]
+      },
+      "description": "wrap49((a + b + c) % 49)",
+      "builtin": true
+    }
+  ]
+}
