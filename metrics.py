@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import math
 
 
@@ -115,3 +115,77 @@ def summarize(hits: List[int]) -> Dict[str, Any]:
     }
     d["综合评分"] = composite_score(d)
     return d
+
+
+def streak_trigger_stats(hits: List[int], k: int, horizon: int) -> Tuple[int, float]:
+    """
+    连对触发统计：
+    - trigger_count: 连续命中达到 k 次的触发次数（从 <k-1 到 k 的瞬间）
+    - post_rate: 每次触发后未来 horizon 期的命中率（聚合平均）
+    """
+    if not hits or k <= 0 or horizon <= 0:
+        return 0, 0.0
+
+    triggers = []
+    streak = 0
+    for i, x in enumerate(hits):
+        if x == 1:
+            streak += 1
+            if streak == k:
+                triggers.append(i)
+        else:
+            streak = 0
+
+    if not triggers:
+        return 0, 0.0
+
+    total = 0
+    cnt = 0
+    n = len(hits)
+    for i in triggers:
+        start = i + 1
+        end = min(n, start + horizon)
+        if start >= n:
+            continue
+        seg = hits[start:end]
+        total += sum(seg)
+        cnt += len(seg)
+    if cnt == 0:
+        return len(triggers), 0.0
+    return len(triggers), total / cnt
+
+
+def overheat_trigger_stats(hits: List[int], lookback: int = 50) -> Tuple[int, float]:
+    """
+    过热触发（用于做空观察）：
+    条件：当期命中且当前连红>=3，且近20胜率比近100胜率高至少 10%。
+    输出最近 lookback 期的触发次数，以及触发后下1期命中率。
+    """
+    if not hits:
+        return 0, 0.0
+    n = len(hits)
+    start_i = max(0, n - lookback)
+    streak = 0
+    trigger_idx: List[int] = []
+    for i, x in enumerate(hits):
+        streak = streak + 1 if x == 1 else 0
+        if i < start_i:
+            continue
+        if x != 1 or streak < 3:
+            continue
+        prefix = hits[: i + 1]
+        r20 = last_n_rate(prefix, 20)
+        r100 = last_n_rate(prefix, 100)
+        if r20 >= r100 + 0.10:
+            trigger_idx.append(i)
+
+    if not trigger_idx:
+        return 0, 0.0
+
+    nxt = []
+    for i in trigger_idx:
+        if i + 1 < n:
+            nxt.append(hits[i + 1])
+    if not nxt:
+        return len(trigger_idx), 0.0
+    return len(trigger_idx), sum(nxt) / len(nxt)
