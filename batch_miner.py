@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple, Callable, Iterable
 import itertools
+import hashlib
 
 import pandas as pd
 
@@ -32,6 +33,7 @@ from core.cross_templates import (
     cells_to_sum_expr, cells_to_avg_expr, cells_to_max_expr,
     cells_to_min_expr, cells_to_diff_expr, describe_cells,
 )
+from core.families import families_of
 
 
 # ========================================================
@@ -190,6 +192,14 @@ def batch_mine(
     max_streak_black: int = 999,         # 最高"最大连黑"
     min_samples: int = 5,                # 最低样本数
     min_score: float = 0.0,              # 最低综合分
+    # 新增做空分析筛选
+    min_curr_dui: int = 0,
+    min_rate_50: float = 0.0,
+    min_rate_100: float = 0.0,
+    long_rate_min: float = 0.0,
+    long_rate_max: float = 1.0,
+    min_trigger2_count: int = 0,
+    max_trigger2_next1_rate: float = 1.0,
     corr_threshold: float = 0.9,         # 命中序列相关性去重阈值
     # 是否附带下一期预测
     include_next_prediction: bool = True,
@@ -293,6 +303,13 @@ def batch_mine(
         min_win_100=min_win_100,
         max_streak_black=max_streak_black,
         min_score=min_score,
+        min_curr_dui=min_curr_dui,
+        min_rate_50=min_rate_50,
+        min_rate_100=min_rate_100,
+        long_rate_min=long_rate_min,
+        long_rate_max=long_rate_max,
+        min_trigger2_count=min_trigger2_count,
+        max_trigger2_next1_rate=max_trigger2_next1_rate,
         n_workers=n_workers,
         progress_cb=progress_cb,
     )
@@ -353,9 +370,20 @@ def batch_mine(
     }
 
 
+def _family_id(expr: Dict[str, Any]) -> str:
+    fams = families_of(expr)
+    key = "|".join(sorted(fams))
+    digest = hashlib.md5(key.encode("utf-8")).hexdigest()[:8]
+    return f"{fams[0]}-{digest}"
+
+
 def _backtest_single(args):
     """供多进程调用的回测单元函数。必须在模块顶层（可 pickle）。"""
-    inner, board, hist_records, year_tables, min_samples, min_win_100, max_streak_black, min_score = args
+    (
+        inner, board, hist_records, year_tables, min_samples, min_win_100, max_streak_black, min_score,
+        min_curr_dui, min_rate_50, min_rate_100, long_rate_min, long_rate_max, min_trigger2_count,
+        max_trigger2_next1_rate,
+    ) = args
     from core.backtest import backtest as _bt
     from core.miner import wrap_for_board as _wrap
     from core.formula_ast import fingerprint as _fp, describe as _desc
@@ -380,6 +408,12 @@ def _backtest_single(args):
     if m.get("近100期胜率", 0) < min_win_100: return None
     if m.get("最大连黑", 999) > max_streak_black: return None
     if m.get("综合评分", 0) < min_score: return None
+    if m.get("当前连对", 0) < min_curr_dui: return None
+    if m.get("近50期胜率", 0) < min_rate_50: return None
+    if m.get("近100期胜率", 0) < min_rate_100: return None
+    if not (long_rate_min <= m.get("长期命中率", 0) <= long_rate_max): return None
+    if m.get("连对2触发次数", 0) < min_trigger2_count: return None
+    if m.get("连对2后下1期命中率", 1.0) > max_trigger2_next1_rate: return None
 
     # 来源
     src_info = inner.get("_source", {}) if isinstance(inner, dict) else {}
@@ -399,6 +433,7 @@ def _backtest_single(args):
         "hits": res["hits"],
         "source": source,
         "target": board,
+        "family_id": _family_id(full),
     }
 
 
@@ -414,6 +449,8 @@ def _backtest_single_safe(args):
 def _run_parallel_or_serial(
     deduped, boards, hist, year_tables,
     min_samples, min_win_100, max_streak_black, min_score,
+    min_curr_dui, min_rate_50, min_rate_100, long_rate_min, long_rate_max,
+    min_trigger2_count, max_trigger2_next1_rate,
     n_workers: int, progress_cb,
 ):
     """
@@ -431,7 +468,9 @@ def _run_parallel_or_serial(
     for inner in valid_inners:
         for b in boards:
             tasks.append((inner, b, hist_records, year_tables,
-                          min_samples, min_win_100, max_streak_black, min_score))
+                          min_samples, min_win_100, max_streak_black, min_score,
+                          min_curr_dui, min_rate_50, min_rate_100, long_rate_min, long_rate_max,
+                          min_trigger2_count, max_trigger2_next1_rate))
 
     total = len(tasks)
     if total == 0:

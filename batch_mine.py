@@ -49,6 +49,13 @@ DEFAULT_CONFIG = {
     "max_black": 30,
     "min_samples": 50,
     "min_score": 0.0,
+    "min_curr_dui": 0,
+    "min_rate_50": 0.0,
+    "min_rate_100": 0.0,
+    "long_rate_min": 0.0,
+    "long_rate_max": 1.0,
+    "min_trigger2_count": 0,
+    "max_trigger2_next1_rate": 1.0,
     "corr_threshold": 0.9,
     "use_full_history": False,
     "window": 200,
@@ -238,6 +245,45 @@ def render() -> None:
                 help="多进程并行回测。沙盒/某些环境下可能不稳，遇到问题回退到 1。",
             )
 
+        st.markdown("**过热做空分析筛选**")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            min_curr_dui = st.slider(
+                "当前连对 ≥", 0, 20, int(cfg.get("min_curr_dui", 0)), 1, key="bm_min_dui",
+            )
+        with c2:
+            min_rate_50 = st.slider(
+                "近50命中率 ≥", 0.0, 1.0, float(cfg.get("min_rate_50", 0.0)),
+                0.01, format="%.2f", key="bm_min_r50",
+            )
+        with c3:
+            min_rate_100 = st.slider(
+                "近100命中率 ≥", 0.0, 1.0, float(cfg.get("min_rate_100", 0.0)),
+                0.01, format="%.2f", key="bm_min_r100",
+            )
+        c1, c2 = st.columns(2)
+        with c1:
+            long_rate_min, long_rate_max = st.slider(
+                "长期命中率区间",
+                0.0, 1.0,
+                (
+                    float(cfg.get("long_rate_min", 0.0)),
+                    float(cfg.get("long_rate_max", 1.0)),
+                ),
+                0.01,
+                format="%.2f",
+                key="bm_long_range",
+            )
+        with c2:
+            min_trigger2_count = st.slider(
+                "连对2触发次数 ≥", 0, 500, int(cfg.get("min_trigger2_count", 0)), 1, key="bm_min_t2",
+            )
+            max_trigger2_next1_rate = st.slider(
+                "连对2后下1期命中率 ≤",
+                0.0, 1.0, float(cfg.get("max_trigger2_next1_rate", 1.0)),
+                0.01, format="%.2f", key="bm_max_t2n1",
+            )
+
     cc = st.columns(2)
     with cc[0]:
         if st.button("💾 保存当前配置为默认", key="bm_save_cfg"):
@@ -250,6 +296,13 @@ def render() -> None:
                 "boards": boards,
                 "min_win_100": min_win_100, "max_black": max_black,
                 "min_samples": min_samples, "min_score": min_score,
+                "min_curr_dui": min_curr_dui,
+                "min_rate_50": min_rate_50,
+                "min_rate_100": min_rate_100,
+                "long_rate_min": long_rate_min,
+                "long_rate_max": long_rate_max,
+                "min_trigger2_count": min_trigger2_count,
+                "max_trigger2_next1_rate": max_trigger2_next1_rate,
                 "corr_threshold": corr_threshold,
                 "use_full_history": use_full, "window": window,
                 "max_output": max_output, "n_workers": n_workers,
@@ -299,6 +352,13 @@ def render() -> None:
                 functions=functions, cross_modes=cross_modes,
                 min_win_100=min_win_100, max_streak_black=max_black,
                 min_samples=min_samples, min_score=min_score,
+                min_curr_dui=min_curr_dui,
+                min_rate_50=min_rate_50,
+                min_rate_100=min_rate_100,
+                long_rate_min=long_rate_min,
+                long_rate_max=long_rate_max,
+                min_trigger2_count=min_trigger2_count,
+                max_trigger2_next1_rate=max_trigger2_next1_rate,
                 corr_threshold=corr_threshold,
                 include_next_prediction=True,
                 window=None if use_full else int(window),
@@ -358,12 +418,28 @@ def render() -> None:
             "板块": r.get("target", ""),
             "下一期": f"{next_label} → {pred_val}",
             "综合": round(mm.get("综合评分", 0), 4),
+            "长期命中率": round(mm.get("长期命中率", 0), 3),
             "近100": round(mm.get("近100期胜率", 0), 3),
             "近50":  round(mm.get("近50期胜率", 0), 3),
+            "近30":  round(mm.get("近30期胜率", 0), 3),
             "近20":  round(mm.get("近20期胜率", 0), 3),
+            "近20命中次数": mm.get("近20命中次数", 0),
+            "近10命中次数": mm.get("近10命中次数", 0),
             "连红":  mm.get("当前连红", 0),
+            "当前连对": mm.get("当前连对", 0),
+            "历史最大连对": mm.get("历史最大连对", 0),
             "连黑":  mm.get("当前连黑", 0),
             "最大连黑": mm.get("最大连黑", 0),
+            "连对2触发次数": mm.get("连对2触发次数", 0),
+            "连对2后下1期命中率": round(mm.get("连对2后下1期命中率", 0), 3),
+            "连对2后下3期命中率": round(mm.get("连对2后下3期命中率", 0), 3),
+            "连对3触发次数": mm.get("连对3触发次数", 0),
+            "连对3后下1期命中率": round(mm.get("连对3后下1期命中率", 0), 3),
+            "近50过热触发次数": mm.get("近50过热触发次数", 0),
+            "近50过热后下1期命中率": round(mm.get("近50过热后下1期命中率", 0), 3),
+            "公式家族ID": r.get("family_id", ""),
+            "正向保护分": round(mm.get("正向保护分", 0), 3),
+            "做空分": round(mm.get("做空分", 0), 3),
             "样本": mm.get("样本数", 0),
             "公式": r.get("describe", describe(r.get("expr"))),
         })
@@ -447,12 +523,28 @@ def render() -> None:
                 "板块": st.column_config.TextColumn("板块", disabled=True),
                 "下一期": st.column_config.TextColumn("下一期", disabled=True),
                 "综合": st.column_config.NumberColumn("综合", disabled=True),
+                "长期命中率": st.column_config.NumberColumn("长期命中率", disabled=True),
                 "近100": st.column_config.NumberColumn("近100", disabled=True),
                 "近50": st.column_config.NumberColumn("近50", disabled=True),
+                "近30": st.column_config.NumberColumn("近30", disabled=True),
                 "近20": st.column_config.NumberColumn("近20", disabled=True),
+                "近20命中次数": st.column_config.NumberColumn("近20命中次数", disabled=True),
+                "近10命中次数": st.column_config.NumberColumn("近10命中次数", disabled=True),
                 "连红": st.column_config.NumberColumn("连红", disabled=True),
+                "当前连对": st.column_config.NumberColumn("当前连对", disabled=True),
+                "历史最大连对": st.column_config.NumberColumn("历史最大连对", disabled=True),
                 "连黑": st.column_config.NumberColumn("连黑", disabled=True),
                 "最大连黑": st.column_config.NumberColumn("最大连黑", disabled=True),
+                "连对2触发次数": st.column_config.NumberColumn("连对2触发次数", disabled=True),
+                "连对2后下1期命中率": st.column_config.NumberColumn("连对2后下1期命中率", disabled=True),
+                "连对2后下3期命中率": st.column_config.NumberColumn("连对2后下3期命中率", disabled=True),
+                "连对3触发次数": st.column_config.NumberColumn("连对3触发次数", disabled=True),
+                "连对3后下1期命中率": st.column_config.NumberColumn("连对3后下1期命中率", disabled=True),
+                "近50过热触发次数": st.column_config.NumberColumn("近50过热触发次数", disabled=True),
+                "近50过热后下1期命中率": st.column_config.NumberColumn("近50过热后下1期命中率", disabled=True),
+                "公式家族ID": st.column_config.TextColumn("公式家族ID", disabled=True),
+                "正向保护分": st.column_config.NumberColumn("正向保护分", disabled=True),
+                "做空分": st.column_config.NumberColumn("做空分", disabled=True),
                 "样本": st.column_config.NumberColumn("样本", disabled=True),
                 "公式": st.column_config.TextColumn("公式", disabled=True),
             },
@@ -466,6 +558,34 @@ def render() -> None:
         st.caption(f"已勾选 {sel_n} / {n} 条")
 
     _render_results_table()
+
+    zodiacs = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"]
+    zodiac_bucket = {z: 0.0 for z in zodiacs}
+    for r in results:
+        score = float((r.get("metrics", {}) or {}).get("做空分", 0.0) or 0.0)
+        pred = (r.get("next_prediction") or {}).get("prediction")
+        vals = pred if isinstance(pred, list) else [pred]
+        for v in vals:
+            txt = str(v or "")
+            for z in zodiacs:
+                if z in txt:
+                    zodiac_bucket[z] += score
+                    break
+    zrank = pd.DataFrame(
+        [{"生肖": z, "做空分": round(v, 4)} for z, v in zodiac_bucket.items()]
+    ).sort_values("做空分", ascending=False).reset_index(drop=True)
+    zrank.insert(0, "排名", zrank.index + 1)
+    st.markdown("##### 🐯 做空排名（12生肖）")
+    st.dataframe(zrank, use_container_width=True, hide_index=True)
+
+    export_df = df.drop(columns=["✅"]).copy()
+    st.download_button(
+        "⬇️ 导出挖掘结果 CSV（含做空分析字段）",
+        data=export_df.to_csv(index=False).encode("utf-8-sig"),
+        file_name="batch_mine_results.csv",
+        mime="text/csv",
+        key="bm_export_csv",
+    )
 
     # 取出最新勾选状态供下方按钮使用
     edited_checks = list(st.session_state[checked_state_key])
